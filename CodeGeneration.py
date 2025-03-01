@@ -1,3 +1,4 @@
+import streamlit as st
 from typing import Iterator, Dict, Any
 from agno.agent import Agent, RunResponse
 from agno.storage.workflow.sqlite import SqliteWorkflowStorage
@@ -79,45 +80,71 @@ class CodeGenerationWorkflow(Workflow):
 
     def update_run_method(self):
         def run(user_input, feedback_data=None):
+            
+            log_container = st.empty()
+            
             if feedback_data:
                 logger.info(f"Feedback: {feedback_data}")
+                with log_container.container():
+                    st.text_area("Feedback:", value=f"Feedback: {feedback_data}", height=100)
+                
                 yield RunResponse(run_id=self.run_id, content=f"Feedback: {feedback_data}")
                 if "bugs" in feedback_data and feedback_data["bugs"]:
                     user_input = feedback_data["bugs"]
 
             logger.info(f"User input: {user_input}")
+            with log_container.container():
+                st.text_area("User Input:", value=f"User input: {user_input}", height=100)
             yield RunResponse(run_id=self.run_id, content=f"User input: {user_input}")
 
             # Generate code
             logger.info("Generating code...")
+            with log_container.container():
+                st.text("Generating code...")
             code_generation_response: RunResponse = self.code_generator.run(
                 user_input
             )
             if not code_generation_response.content:
+                with log_container.container():
+                    st.error("Code generation failed.")
                 yield RunResponse(run_id=self.run_id, content="Code generation failed.")
                 return
 
             generated_code = code_generation_response.content
+            with log_container.container():
+                st.text_area("Generated Code:", value=f"```python\n{generated_code}\n```", height=300)
             yield RunResponse(run_id=self.run_id, content=f"Generated Code:\n```python\n{generated_code}\n```")
 
             # Review code
             logger.info("Reviewing code...")
+            with log_container.container():
+                st.text("Reviewing code...")
             code_review_response: RunResponse = self.code_reviewer.run(
                 generated_code
             )
             if not code_review_response.content:
+                with log_container.container():
+                    st.error("Code review failed.")
                 yield RunResponse(run_id=self.run_id, content="Code review failed.")
                 return
 
             review_result = code_review_response.content
+            with log_container.container():
+                 st.text_area("Review Result:", value=review_result, height=200)
             yield RunResponse(run_id=self.run_id, content=f"Review Result:\n{review_result}")
 
             # Execute code
             logger.info("Executing code...")
+            with log_container.container():
+                 st.text("Executing code...")
             if "No bugs found" in review_result:
                 code_execution_output = self.execute_python_code(generated_code)
+                with log_container.container():
+                     st.text_area("Execution Result:", value=f"```\n{code_execution_output}\n```", height=300)
                 yield RunResponse(run_id=self.run_id, content=f"Execution Result:\n```\n{code_execution_output}\n```")
             else:
+                with log_container.container():
+                    st.warning("Code contains bugs, returning to code generator")
                 yield RunResponse(run_id=self.run_id, content="Code contains bugs, returning to code generator")
 
                 new_feedback_data = {
