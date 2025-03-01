@@ -6,6 +6,8 @@ from agno.workflow import Workflow
 from agno.models.groq import Groq
 from agno.tools.python import PythonTools
 
+logger.setLevel("INFO")
+
 class CodeGenerationWorkflow(Workflow):
     description: str = "Generate, review, and execute Python code based on user input."
 
@@ -90,9 +92,8 @@ class CodeGenerationWorkflow(Workflow):
 
             # Generate code
             logger.info("Generating code...")
-            code_generation_response: RunResponse = self.code_generator.run(
-                user_input
-            )
+            code_generation_response: RunResponse = self.code_generator.run(user_input)
+            
             if not code_generation_response.content:
                 yield RunResponse(run_id=self.run_id, content="Code generation failed.")
                 return
@@ -102,9 +103,8 @@ class CodeGenerationWorkflow(Workflow):
 
             # Review code
             logger.info("Reviewing code...")
-            code_review_response: RunResponse = self.code_reviewer.run(
-                generated_code
-            )
+            code_review_response: RunResponse = self.code_reviewer.run(generated_code)
+
             if not code_review_response.content:
                 yield RunResponse(run_id=self.run_id, content="Code review failed.")
                 return
