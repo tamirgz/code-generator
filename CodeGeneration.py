@@ -79,18 +79,9 @@ class CodeGenerationWorkflow(Workflow):
         return self.code_executor.run(code).content
 
     def update_run_method(self):
-        def run(user_input, feedback_data=None):
+        def run(user_input):
             
             log_container = st.empty()
-            
-            if feedback_data:
-                logger.info(f"Feedback: {feedback_data}")
-                with log_container.container():
-                    st.text_area("Feedback:", value=f"Feedback: {feedback_data}", height=100)
-                
-                yield RunResponse(run_id=self.run_id, content=f"Feedback: {feedback_data}")
-                if "bugs" in feedback_data and feedback_data["bugs"]:
-                    user_input = feedback_data["bugs"]
 
             logger.info(f"User input: {user_input}")
             with log_container.container():
@@ -101,9 +92,8 @@ class CodeGenerationWorkflow(Workflow):
             logger.info("Generating code...")
             with log_container.container():
                 st.text("Generating code...")
-            code_generation_response: RunResponse = self.code_generator.run(
-                user_input
-            )
+            code_generation_response: RunResponse = self.code_generator.run(user_input)
+            
             if not code_generation_response.content:
                 with log_container.container():
                     st.error("Code generation failed.")
@@ -119,9 +109,8 @@ class CodeGenerationWorkflow(Workflow):
             logger.info("Reviewing code...")
             with log_container.container():
                 st.text("Reviewing code...")
-            code_review_response: RunResponse = self.code_reviewer.run(
-                generated_code
-            )
+            code_review_response: RunResponse = self.code_reviewer.run(generated_code)
+
             if not code_review_response.content:
                 with log_container.container():
                     st.error("Code review failed.")
@@ -151,25 +140,21 @@ class CodeGenerationWorkflow(Workflow):
                     "original_input": user_input,
                     "bugs": f"Bugs found: {review_result}",
                 }
-                yield from self._run_recursive(new_feedback_data, is_recursive_call=False)
+                yield from self._run_recursive(new_feedback_data)
 
-        def _run_recursive(feedback_data: Dict[str, Any], is_recursive_call: bool) -> Iterator[RunResponse]:
+        def _run_recursive(feedback_data: Dict[str, Any]) -> Iterator[RunResponse]:
             """Helper method to handle recursive calls properly."""
             # Extract the user_input from the feedback_data, and if the feedback_data includes bugs, also extract it.
             user_input = feedback_data.get("bugs", "") if feedback_data.get("bugs", "") != "" else feedback_data.get("original_input")
-
-            if is_recursive_call:
-                yield from run(user_input, feedback_data)
-            else:
-                yield from run(user_input, feedback_data)
+            yield from run(user_input)
 
         setattr(self, "run", run)
         setattr(self, "_run_recursive", _run_recursive)
 
-    def run_workflow(self, user_input: str, feedback_data: Dict[str, Any] = None) -> Iterator[RunResponse]:
+    def run_workflow(self, user_input: str) -> Iterator[RunResponse]:
         """
         Main workflow implementation that handles the code generation process.
         """
         self.create_agents()
         self.update_run_method()
-        yield from self.run(user_input, feedback_data)
+        yield from self.run(user_input)
