@@ -6,6 +6,10 @@ from agno.workflow import Workflow
 from agno.models.groq import Groq
 from agno.tools.python import PythonTools
 
+from dotenv import dotenv_values
+
+config = dotenv_values(".env")
+
 logger.setLevel("INFO")
 
 class CodeGenerationWorkflow(Workflow):
@@ -24,7 +28,7 @@ class CodeGenerationWorkflow(Workflow):
             Focus on clarity, efficiency, and correctness. Only generate code. Do not explain the code. 
             Your task is to generate code that build a workflow with agents using agno library.""",
             show_tool_calls=True,
-            model=Groq(id="deepseek-r1-distill-llama-70b", api_key="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", temperature=0.4),
+            model=Groq(id="deepseek-r1-distill-llama-70b", api_key=config["GROQ_API_KEY"], temperature=0.5),
             instructions=[
                 "Carefully analyze the user's request and break it down into logical steps.",
                 "Write Python code that addresses each step.",
@@ -43,7 +47,7 @@ class CodeGenerationWorkflow(Workflow):
             You receive Python code and analyze it for potential bugs, errors, or inefficiencies. 
             Provide detailed feedback on any issues you find. Be specific with your critique. If no bugs, then return 'No bugs found' """,
             show_tool_calls=True,
-            model=Groq(id="deepseek-r1-distill-llama-70b", api_key="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", temperature=0.4),
+            model=Groq(id="deepseek-r1-distill-llama-70b", api_key=config["GROQ_API_KEY"], temperature=0.2),
             instructions=[
                 "Carefully examine the provided Python code line by line.",
                 "Look for potential logical errors, syntax mistakes, or runtime issues.",
@@ -62,7 +66,7 @@ class CodeGenerationWorkflow(Workflow):
                 If execution is successful, return 'Code executed successfully' followed by the output.
                 Make sure that you can install the packages using pip install if needed""",
                 show_tool_calls=True,
-                model=Groq(id="deepseek-r1-distill-llama-70b", api_key="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", temperature=0.4),
+                model=Groq(id="deepseek-r1-distill-llama-70b", api_key=config["GROQ_API_KEY"], temperature=0.1),
                 tools=[PythonTools()],
                 instructions=[
                 "Receive Python code and execute it.",

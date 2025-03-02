@@ -170,3 +170,5 @@ tmp/
 
 # PyPI configuration file
 .pypirc
+
+.env
